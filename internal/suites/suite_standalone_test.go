@@ -346,6 +346,10 @@ func (s *StandaloneSuite) TestResetPasswordScenario() {
 	suite.Run(s.T(), NewResetPasswordScenario())
 }
 
+func (s *StandaloneSuite) TestChangePasswordScenario() {
+	suite.Run(s.T(), NewChangePasswordScenario())
+}
+
 func (s *StandaloneSuite) TestRequestMethodScenario() {
 	suite.Run(s.T(), NewRequestMethodScenario())
 }
@@ -360,6 +364,10 @@ func (s *StandaloneSuite) TestRedirectionURLScenario() {
 
 func (s *StandaloneSuite) TestRedirectionCheckScenario() {
 	suite.Run(s.T(), NewRedirectionCheckScenario())
+}
+
+func (s *StandaloneSuite) TestLanguageMenuScenario() {
+	suite.Run(s.T(), NewLanguageMenuScenario())
 }
 
 func TestStandaloneSuite(t *testing.T) {
