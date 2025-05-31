@@ -2,7 +2,7 @@
 title: "OpenID Connect Playground"
 description: "Integrating OpenID Connect Playground with the Authelia OpenID Connect 1.0 Provider."
 summary: ""
-date: 2022-06-15T17:51:47+10:00
+date: 2023-11-12T21:18:09+11:00
 draft: false
 images: []
 weight: 620
@@ -22,7 +22,7 @@ seo:
 ## Tested Versions
 
 - [Authelia]
-  - [v4.39.2](https://github.com/authelia/authelia/releases/tag/v4.39.2)
+  - [v4.39.4](https://github.com/authelia/authelia/releases/tag/v4.39.4)
 - [OpenID Connect Playground]
   - Not Applicable
 
