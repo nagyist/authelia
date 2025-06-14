@@ -93,7 +93,7 @@ const WebAuthnCredentialEditDialog = function (props: Props) {
 
     return (
         <Dialog open={props.open} onClose={handleCancel}>
-            <DialogTitle>{translate("Edit {{item}}", { item: translate("WebAuthn Credential") })}</DialogTitle>
+            <DialogTitle>{translate("Edit WebAuthn Credential")}</DialogTitle>
             <DialogContent>
                 <DialogContentText>
                     {translate("Enter a new description for this WebAuthn Credential")}
@@ -109,7 +109,11 @@ const WebAuthnCredentialEditDialog = function (props: Props) {
                     error={errorDescription}
                     fullWidth
                     disabled={false}
-                    inputProps={{ maxLength: 30 }}
+                    slotProps={{
+                        htmlInput: {
+                            maxLength: 30,
+                        },
+                    }}
                     onChange={(v) => {
                         setCredentialDescription(v.target.value.substring(0, 30));
                         setErrorDescription(false);

@@ -21,7 +21,7 @@ seo:
 ## Tested Versions
 
 - [Authelia]
-  - [v4.38.0](https://github.com/authelia/authelia/releases/tag/v4.38.0)
+  - [v4.39.4](https://github.com/authelia/authelia/releases/tag/v4.39.4)
 - [Apache Guacamole]
   - [v1.5.5](https://guacamole.apache.org/releases/1.5.5/)
 
@@ -43,8 +43,6 @@ Some of the values presented in this guide can automatically be replaced with do
 
 ### Authelia
 
-{{% oidc-conformance-claims claims="preferred_username" %}}
-
 The following YAML configuration is an example __Authelia__ [client configuration] for use with [Apache Guacamole] which
 will operate with the application example:
 
@@ -58,6 +56,8 @@ identity_providers:
         client_name: 'Apache Guacamole'
         public: true
         authorization_policy: 'two_factor'
+        require_pkce: false
+        pkce_challenge_method: ''
         redirect_uris:
           - 'https://guacamole.{{< sitevar name="domain" nojs="example.com" >}}'
         scopes:
@@ -69,7 +69,9 @@ identity_providers:
           - 'id_token'
         grant_types:
           - 'implicit'
+        access_token_signed_response_alg: 'none'
         userinfo_signed_response_alg: 'none'
+        token_endpoint_auth_method: 'client_secret_basic'
 ```
 
 ### Application
