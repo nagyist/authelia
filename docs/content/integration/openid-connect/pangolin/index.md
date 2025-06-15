@@ -2,7 +2,7 @@
 title: "Pangolin"
 description: "Integrating Pangolin with the Authelia OpenID Connect 1.0 Provider."
 summary: ""
-date: 2022-05-06T17:51:47+10:00
+date: 2022-06-15T17:51:47+10:00
 draft: false
 images: []
 weight: 620
@@ -21,7 +21,7 @@ seo:
 ## Tested Versions
 
 - [Authelia]
-  - [v4.39.1](https://github.com/authelia/authelia/releases/tag/v4.39.1)
+  - [v4.39.4](https://github.com/authelia/authelia/releases/tag/v4.39.4)
 - [Pangolin]
   - [v1.3.1](https://github.com/fosrl/pangolin/releases/tag/1.3.1)
 
@@ -67,6 +67,11 @@ identity_providers:
           - 'openid'
           - 'profile'
           - 'email'
+        response_types:
+          - 'code'
+        grant_types:
+          - 'authorization_code'
+        access_token_signed_response_alg: 'none'
         userinfo_signed_response_alg: 'none'
         token_endpoint_auth_method: 'client_secret_basic'
 ```

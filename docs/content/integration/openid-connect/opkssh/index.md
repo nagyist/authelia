@@ -21,7 +21,7 @@ seo:
 ## Tested Versions
 
 - [Authelia]
-  - [v4.39.1](https://github.com/authelia/authelia/releases/tag/v4.39.1)
+  - [v4.39.4](https://github.com/authelia/authelia/releases/tag/v4.39.4)
 - [opkssh]
   - [v0.4.0](https://github.com/openpubkey/opkssh/releases/tag/v0.4.0)
 
@@ -67,6 +67,11 @@ identity_providers:
           - 'openid'
           - 'profile'
           - 'email'
+        response_types:
+          - 'code'
+        grant_types:
+          - 'authorization_code'
+        access_token_signed_response_alg: 'none'
         userinfo_signed_response_alg: 'none'
         token_endpoint_auth_method: 'client_secret_basic'
 ```

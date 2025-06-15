@@ -69,6 +69,11 @@ identity_providers:
           - 'profile'
           - 'groups'
           - 'email'
+        response_types:
+          - 'code'
+        grant_types:
+          - 'authorization_code'
+        access_token_signed_response_alg: 'none'
         userinfo_signed_response_alg: 'none'
         token_endpoint_auth_method: 'client_secret_basic'
 ```
@@ -163,10 +168,13 @@ The role attribute path configuration is optional but allows mapping Authelia gr
 you do not wish to automatically do this you can just omit the `role_attribute_path` configuration option or
 `GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH` environment variable.
 
-The ways you can configure this rule value is vast as an examle if you wanted a default role of `Viewer`, but also
-wanted everyone in the `admin` Authelia group to be in the `Admin` role, and everyone in the `editor` Authelia group to
-be in the `Editor` role, a rule similar to
-`contains(groups, 'admin') && 'Admin' || contains(groups, 'editor') && 'Editor' || 'Viewer'` would be needed.
+The ways you can configure this rule value is vast, here is a simple example:
+- User's with the authelia group `admin` should be a member of the Grafana group `Admin`
+- User's with the authelia group `editor` should be a member of the Grafana group `Editor`
+- Everyone else should be a member of the Grafana group 'Viewer'
+
+To achieve the above structure you would use the following `role_attribute_path`:
+`contains(groups[*], 'admin') && 'Admin' || contains(groups[*], 'editor') && 'Editor' || 'Viewer'`
 
 See [Grafana Generic OAuth2 Documentation: Configure role mapping] for more information.
 
