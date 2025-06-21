@@ -193,7 +193,7 @@ type Client interface {
 
 	ValidateResponseModePolicy(r oauthelia2.AuthorizeRequester) (err error)
 
-	GetConsentResponseBody(consent *model.OAuth2ConsentSession, form url.Values) (body ConsentGetResponseBody)
+	GetConsentResponseBody(session RequesterFormSession, form url.Values, authTime time.Time, disablePreConf bool) (body ConsentGetResponseBody)
 	GetConsentPolicy() ClientConsentPolicy
 	IsAuthenticationLevelSufficient(level authentication.Level, subject authorization.Subject) (sufficient bool)
 	GetAuthorizationPolicyRequiredLevel(subject authorization.Subject) (level authorization.Level)
@@ -217,6 +217,13 @@ type Context interface {
 	GetRandom() (random random.Provider)
 	GetConfiguration() (config schema.Configuration)
 	GetJWTWithTimeFuncOption() (option jwt.ParserOption)
+	GetProviderUserAttributeResolver() expression.UserAttributeResolver
+
+	context.Context
+}
+
+// ClaimsStrategyContext is a context used for the CustomClaimsStrategy implementation.
+type ClaimsStrategyContext interface {
 	GetProviderUserAttributeResolver() expression.UserAttributeResolver
 
 	context.Context
@@ -299,20 +306,24 @@ type ConsentGetResponseBody struct {
 	PreConfiguration  bool     `json:"pre_configuration"`
 	Claims            []string `json:"claims"`
 	EssentialClaims   []string `json:"essential_claims"`
+	RequireLogin      bool     `json:"require_login"`
 }
 
 // ConsentPostRequestBody schema of the request body of the consent POST endpoint.
 type ConsentPostRequestBody struct {
-	ConsentID    string   `json:"id"`
+	FlowID       *string  `json:"flow_id"`
 	ClientID     string   `json:"client_id"`
 	Consent      bool     `json:"consent"`
 	PreConfigure bool     `json:"pre_configure"`
 	Claims       []string `json:"claims"`
+	SubFlow      *string  `json:"subflow"`
+	UserCode     *string  `json:"user_code"`
 }
 
 // ConsentPostResponseBody schema of the response body of the consent POST endpoint.
 type ConsentPostResponseBody struct {
-	RedirectURI string `json:"redirect_uri"`
+	RedirectURI string `json:"redirect_uri,omitempty"`
+	FlowID      string `json:"flow_id,omitempty"`
 }
 
 /*
@@ -985,6 +996,50 @@ type OpenIDFederationDiscoveryOptions struct {
 	RequestAuthenticationSigningAlgValuesSupported []string `json:"request_authentication_signing_alg_values_supported,omitempty"`
 }
 
+type OpenIDConnectIdentityAssurance struct {
+	/*
+		Required. JSON array containing all supported trust frameworks. This array shall have at least one member.
+	*/
+	TrustFrameworksSupported []string `json:"trust_frameworks_supported"`
+
+	/*
+			Required. JSON array containing all claims supported within verified_claims. claims that are not present in
+		    this array shall not be returned within the verified_claims object. This array shall have at least one member.
+	*/
+	ClaimsInVerifiedClaimsSupported []string `json:"claims_in_verified_claims_supported"`
+
+	/*
+			Required when one or more type of evidence is supported. JSON array containing all types of identity evidence
+		    the OP uses. This array shall have at least one member. Members of this array should only be the types of
+		    evidence supported by the OP in the evidence element (see section 5.4.4 of [IDA-verified-claims]).
+	*/
+	EvidenceSupported []string `json:"evidence_supported,omitempty"`
+
+	/*
+		Required when evidence_supported contains "document". JSON array containing all identity document types
+		utilized by the OP for identity verification. This array shall have at least one member.
+	*/
+	DocumentsSupported []string `json:"documents_supported,omitempty"`
+
+	/*
+		Optional. JSON array containing the verification methods the OP supports for evidences of type "document" (see
+		[predefined_values_page]). When present this array shall have at least one member.
+	*/
+	DocumentsMethodsSupported []string `json:"documents_methods_supported,omitempty"`
+
+	/*
+		Optional. JSON array containing the check methods the OP supports for evidences of type "document" (see
+		[predefined_values_page]). When present this array shall have at least one member.
+	*/
+	DocumentsCheckMethodsSupported []string `json:"documents_check_methods_supported,omitempty"`
+
+	/*
+		Required when evidence_supported contains "electronic_record". JSON array containing all electronic record types
+		the OP supports (see [predefined_values_page]). When present this array shall have at least one member.
+	*/
+	ElectronicRecordsSupported []string `json:"electronic_records_supported,omitempty"`
+}
+
 // OAuth2WellKnownConfiguration represents the well known discovery document specific to OAuth 2.0.
 type OAuth2WellKnownConfiguration struct {
 	CommonDiscoveryOptions
@@ -1024,6 +1079,7 @@ type OpenIDConnectWellKnownConfiguration struct {
 	*OpenIDConnectClientInitiatedBackChannelAuthFlowDiscoveryOptions
 	*OpenIDConnectJWTSecuredAuthorizationResponseModeDiscoveryOptions
 	*OpenIDFederationDiscoveryOptions
+	*OpenIDConnectIdentityAssurance
 }
 
 type OpenIDConnectWellKnownSignedConfiguration struct {
@@ -1038,6 +1094,22 @@ type OpenIDConnectWellKnownSignedConfiguration struct {
 
 func (claims *OpenIDConnectWellKnownSignedConfiguration) ToMap() (result fjwt.MapClaims) {
 	return fjwt.NewMapClaims(claims)
+}
+
+type FormSession interface {
+	GetForm() (form url.Values, err error)
+}
+
+type RequesterFormSession interface {
+	FormSession
+
+	GetRequestedAt() time.Time
+
+	GetRequestedScopes() []string
+	GetRequestedAudience() []string
+
+	GetGrantedScopes() []string
+	GetGrantedAudience() []string
 }
 
 type Number interface {
@@ -1062,4 +1134,7 @@ var (
 	_ oauthelia2.RequestedAudienceImplicitClient                   = (*RegisteredClient)(nil)
 	_ oauthelia2.JWTProfileClient                                  = (*RegisteredClient)(nil)
 	_ oauthelia2.IntrospectionJWTResponseClient                    = (*RegisteredClient)(nil)
+
+	_ RequesterFormSession = (*model.OAuth2ConsentSession)(nil)
+	_ RequesterFormSession = (*model.OAuth2DeviceCodeSession)(nil)
 )

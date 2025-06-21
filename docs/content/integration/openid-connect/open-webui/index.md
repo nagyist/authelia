@@ -23,9 +23,9 @@ seo:
 ## Tested Versions
 
 - [Authelia]
-  - [v4.38.18](https://github.com/authelia/authelia/releases/tag/v4.38.18)
+  - [v4.39.4](https://github.com/authelia/authelia/releases/tag/v4.39.4)
 - [Open WebUI]
-  - [v0.5.4](https://github.com/open-webui/open-webui/releases/tag/v0.5.4)
+  - [v0.6.13](https://github.com/open-webui/open-webui/releases/tag/v0.6.13)
 
 {{% oidc-common %}}
 
@@ -60,6 +60,8 @@ identity_providers:
         client_secret: '$pbkdf2-sha512$310000$c8p78n7pUMln0jzvd4aK4Q$JNRBzwAo0ek5qKn50cFzzvE9RXV88h1wJn5KGiHrD0YKtZaR/nCb2CJPOsKaPK0hjf.9yHxzQGZziziccp6Yng'  # The digest of 'insecure_secret'.
         public: false
         authorization_policy: 'two_factor'
+        require_pkce: false
+        pkce_challenge_method: ''
         redirect_uris:
           - 'https://ai.{{< sitevar name="domain" nojs="example.com" >}}/oauth/oidc/callback'
         scopes:
@@ -67,6 +69,11 @@ identity_providers:
           - 'profile'
           - 'groups'
           - 'email'
+        response_types:
+          - 'code'
+        grant_types:
+          - 'authorization_code'
+        access_token_signed_response_alg: 'none'
         userinfo_signed_response_alg: 'none'
         token_endpoint_auth_method: 'client_secret_basic'
 ```
@@ -88,6 +95,7 @@ To configure [Open WebUI] to utilize Authelia as an [OpenID Connect 1.0] Provide
 ##### Standard
 
 ```shell {title=".env"}
+WEBUI_URL=https://ai.{{< sitevar name="domain" nojs="example.com" >}}
 ENABLE_OAUTH_SIGNUP=true
 OAUTH_MERGE_ACCOUNTS_BY_EMAIL=true
 OAUTH_CLIENT_ID=open-webui
@@ -107,6 +115,7 @@ OAUTH_ROLES_CLAIM=groups
 services:
   open-webui:
     environment:
+      WEBUI_URL: 'https://ai.{{< sitevar name="domain" nojs="example.com" >}}'
       ENABLE_OAUTH_SIGNUP: 'true'
       OAUTH_MERGE_ACCOUNTS_BY_EMAIL: 'true'
       OAUTH_CLIENT_ID: 'open-webui'
