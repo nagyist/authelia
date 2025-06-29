@@ -21,11 +21,11 @@ seo:
 ## Tested Versions
 
 - [Authelia]
-  - [v4.39.1](https://github.com/authelia/authelia/releases/tag/v4.39.1)
+  - [v4.39.4](https://github.com/authelia/authelia/releases/tag/v4.39.4)
 - [opkssh]
-  - [v0.4.0](https://github.com/openpubkey/opkssh/releases/tag/v0.4.0)
+  - [v0.7.0](https://github.com/openpubkey/opkssh/releases/tag/v0.7.0)
 
-{{% oidc-common %}}
+{{% oidc-common bugs="claims-hydration" %}}
 
 ### Assumptions
 
@@ -41,8 +41,6 @@ Some of the values presented in this guide can automatically be replaced with do
 ## Configuration
 
 ### Authelia
-
-{{% oidc-conformance-claims claims="email" %}}
 
 The following YAML configuration is an example __Authelia__ [client configuration] for use with [opkssh] which will
 operate with the application example:
@@ -65,15 +63,60 @@ identity_providers:
           - 'http://localhost:11110/login-callback'
         scopes:
           - 'openid'
-          - 'profile'
-          - 'email'
+          - 'offline_access'
+        response_types:
+          - 'code'
+        grant_types:
+          - 'authorization_code'
+          - 'refresh_token'
+        access_token_signed_response_alg: 'none'
         userinfo_signed_response_alg: 'none'
-        token_endpoint_auth_method: 'client_secret_basic'
+        token_endpoint_auth_method: 'none'
 ```
 
 ### Application
 
 To configure [opkssh] to utilize Authelia as an [OpenID Connect 1.0] Provider:
+
+#### Client
+
+To log in using Authelia run:
+
+```shell
+opkssh login --provider=https://{{< sitevar name="subdomain-authelia" nojs="auth" >}}.{{< sitevar name="domain" nojs="example.com" >}}/,opkssh
+```
+
+You will now see your unique user identifier `sub` in the CLI, copy it to set up the access control on the server.
+
+##### Configuration File
+
+{{< callout context="tip" title="Did you know?" icon="outline/rocket" >}}
+Generally the configuration file is named `~/.opk/config.yml` on Linux and `C:\Users\{USER}\.opk\config.yml` on Windows.
+{{< /callout >}}
+
+To create a persistent configuration, generate a new configuration file by running the following command:
+
+```shell
+opkssh login --create-config
+```
+
+Then add Authelia to the existing providers:
+
+```yaml{title="~/.opk/config.yml"}
+providers:
+  - alias: authelia
+    issuer: https://{{< sitevar name="subdomain-authelia" nojs="auth" >}}.{{< sitevar name="domain" nojs="example.com" >}}
+    client_id: opkssh
+    scopes: openid offline_access
+    access_type: offline
+    prompt: consent
+    redirect_uris:
+      - http://localhost:3000/login-callback
+      - http://localhost:10001/login-callback
+      - http://localhost:11110/login-callback
+```
+
+You can now run `opkssh login` to login.
 
 #### Server
 
@@ -93,19 +136,14 @@ https://{{< sitevar name="subdomain-authelia" nojs="auth" >}}.{{< sitevar name="
 
 In addition to above, the CLI will need to be used to map users manually.
 
-For example allow the user `john@example.com` to login as `root` :
+For example allow the user `john` with the user identifier of `f0919359-9d15-4e15-bcba-83b41620a073` to login as `root` :
 
 ```shell
-opkssh add root john@example.com https://{{< sitevar name="subdomain-authelia" nojs="auth" >}}.{{< sitevar name="domain" nojs="example.com" >}}/
+opkssh add root f0919359-9d15-4e15-bcba-83b41620a073 https://{{< sitevar name="subdomain-authelia" nojs="auth" >}}.{{< sitevar name="domain" nojs="example.com" >}}/
 ```
 
-#### Client
-
-To log in using Authelia run:
-
-```shell
-opkssh login --provider=https://{{< sitevar name="subdomain-authelia" nojs="auth" >}}.{{< sitevar name="domain" nojs="example.com" >}}/,opkssh
-```
+To set up access control not just for yourself but other users as well, use the [authelia storage user identifiers export](https://www.authelia.com/reference/cli/authelia/authelia_storage_user_identifiers_export/)
+command to get all user identifiers.
 
 ## See Also
 

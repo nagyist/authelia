@@ -3047,6 +3047,8 @@ func TestValidateOIDCClients(t *testing.T) {
 				assert.Equal(t, oidc.EncryptionEncA128CBCHS256, have.Clients[0].UserinfoEncryptedResponseEnc)
 				assert.Equal(t, oidc.EncryptionEncA128CBCHS256, have.Clients[0].IntrospectionEncryptedResponseEnc)
 				assert.Equal(t, oidc.EncryptionEncA128CBCHS256, have.Clients[0].AccessTokenEncryptedResponseEnc)
+
+				assert.True(t, have.Discovery.JWTResponseAccessTokens)
 			},
 			tcv{
 				nil,
@@ -4507,6 +4509,7 @@ func TestShouldValidateOpenIDConnectClaimsPolicies(t *testing.T) {
 	testCases := []struct {
 		name    string
 		have    *schema.Configuration
+		scopes  bool
 		expectf func(t *testing.T, actual *schema.IdentityProvidersOpenIDConnect)
 		errors  []string
 	}{
@@ -4627,6 +4630,42 @@ func TestShouldValidateOpenIDConnectClaimsPolicies(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			name: "ShouldAllowCustomClaimsNameMapping",
+			have: &schema.Configuration{
+				AuthenticationBackend: schema.AuthenticationBackend{
+					File: &schema.AuthenticationBackendFile{},
+				},
+				IdentityProviders: schema.IdentityProviders{
+					OIDC: &schema.IdentityProvidersOpenIDConnect{
+						Scopes: map[string]schema.IdentityProvidersOpenIDConnectScope{
+							"example": {
+								Claims: []string{"http://example.com/myclaim"},
+							},
+						},
+						ClaimsPolicies: map[string]schema.IdentityProvidersOpenIDConnectClaimsPolicy{
+							"example": {
+								IDToken:     []string{"id-claim"},
+								AccessToken: []string{"at-claim"},
+								CustomClaims: map[string]schema.IdentityProvidersOpenIDConnectCustomClaim{
+									"id-claim": {Attribute: "email"},
+									"at-claim": {Attribute: "email"},
+									"myclaim":  {Name: "http://example.com/myclaim", Attribute: "email"},
+								},
+							},
+						},
+						Clients: []schema.IdentityProvidersOpenIDConnectClient{
+							{
+								ID:           "example",
+								Scopes:       []string{"openid", "example"},
+								ClaimsPolicy: "example",
+							},
+						},
+					},
+				},
+			},
+			scopes: true,
 		},
 		{
 			name: "ShouldNotAllowCustomClaimsAutoMissingAttribute",
@@ -4922,6 +4961,14 @@ func TestShouldValidateOpenIDConnectClaimsPolicies(t *testing.T) {
 			val := schema.NewStructValidator()
 
 			validateOIDCClaims(tc.have, val)
+
+			if tc.scopes {
+				require.Len(t, tc.have.IdentityProviders.OIDC.Clients, 1)
+
+				validateOIDCClientScopes(0, tc.have.IdentityProviders.OIDC, val, false, func() {
+
+				})
+			}
 
 			if tc.expectf != nil {
 				tc.expectf(t, tc.have.IdentityProviders.OIDC)

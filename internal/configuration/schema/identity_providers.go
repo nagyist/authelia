@@ -51,10 +51,23 @@ type IdentityProvidersOpenIDConnectClaimsPolicy struct {
 
 	IDTokenAudienceMode string `koanf:"id_token_audience_mode" yaml:"id_token_audience_mode,omitempty" toml:"id_token_audience_mode,omitempty" json:"id_token_audience_mode,omitempty" jsonschema:"default=specification,title=ID Token Audience Mode,enum=specification,enum=experimental-merged" jsonschema_description:"Sets the mode for ID Token audience derivation for clients that use this policy."`
 
-	CustomClaims map[string]IdentityProvidersOpenIDConnectCustomClaim `koanf:"custom_claims" yaml:"custom_claims,omitempty" toml:"custom_claims,omitempty" json:"custom_claims,omitempty" jsonschema:"title=Custom Claims" jsonschema_description:"The custom claims available in this policy in addition to the Standard Claims."`
+	CustomClaims IdentityProvidersOpenIDConnectCustomClaims `koanf:"custom_claims" yaml:"custom_claims,omitempty" toml:"custom_claims,omitempty" json:"custom_claims,omitempty" jsonschema:"title=Custom Claims" jsonschema_description:"The custom claims available in this policy in addition to the Standard Claims."`
+}
+
+type IdentityProvidersOpenIDConnectCustomClaims map[string]IdentityProvidersOpenIDConnectCustomClaim
+
+func (c IdentityProvidersOpenIDConnectCustomClaims) GetCustomClaimByName(name string) IdentityProvidersOpenIDConnectCustomClaim {
+	for _, properties := range c {
+		if properties.Name == name {
+			return properties
+		}
+	}
+
+	return IdentityProvidersOpenIDConnectCustomClaim{}
 }
 
 type IdentityProvidersOpenIDConnectCustomClaim struct {
+	Name      string `koanf:"name" yaml:"name" toml:"name,omitempty" json:"name,omitempty" jsonschema:"title=Name" jsonschema_description:"The name of claim."`
 	Attribute string `koanf:"attribute" yaml:"attribute,omitempty" toml:"attribute,omitempty" json:"attribute,omitempty" jsonschema:"title=Attribute" jsonschema_description:"The attribute that populates this claim."`
 }
 
@@ -99,7 +112,9 @@ type IdentityProvidersOpenIDConnectDiscovery struct {
 
 type IdentityProvidersOpenIDConnectLifespans struct {
 	IdentityProvidersOpenIDConnectLifespanToken `koanf:",squash"`
-	JWTSecuredAuthorization                     time.Duration `koanf:"jwt_secured_authorization" yaml:"jwt_secured_authorization,omitempty" toml:"jwt_secured_authorization,omitempty" json:"jwt_secured_authorization,omitempty" jsonschema:"default=5 minutes,title=JARM" jsonschema_description:"Allows tuning the token lifespan for the JWT Secured Authorization Response Modes (JARM)."`
+
+	DeviceCode              time.Duration `koanf:"device_code" yaml:"device_code,omitempty" toml:"device_code,omitempty" json:"device_code,omitempty" jsonschema:"default=10 minutes,title=Device Code Lifespan" jsonschema_description:"The duration an Device Code is valid for."`
+	JWTSecuredAuthorization time.Duration `koanf:"jwt_secured_authorization" yaml:"jwt_secured_authorization,omitempty" toml:"jwt_secured_authorization,omitempty" json:"jwt_secured_authorization,omitempty" jsonschema:"default=5 minutes,title=JARM" jsonschema_description:"Allows tuning the token lifespan for the JWT Secured Authorization Response Modes (JARM)."`
 
 	Custom map[string]IdentityProvidersOpenIDConnectLifespan `koanf:"custom" yaml:"custom,omitempty" toml:"custom,omitempty" json:"custom,omitempty" jsonschema:"title=Custom Lifespans" jsonschema_description:"Allows creating custom lifespans to be used by individual clients."`
 }
@@ -108,12 +123,15 @@ type IdentityProvidersOpenIDConnectLifespans struct {
 type IdentityProvidersOpenIDConnectLifespan struct {
 	IdentityProvidersOpenIDConnectLifespanToken `koanf:",squash"`
 
+	DeviceCode time.Duration `koanf:"device_code" yaml:"device_code,omitempty" toml:"device_code,omitempty" json:"device_code,omitempty" jsonschema:"default=10 minutes,title=Device Code Lifespan" jsonschema_description:"The duration an Device Code is valid for."`
+
 	Grants IdentityProvidersOpenIDConnectLifespanGrants `koanf:"grants" yaml:"grants,omitempty" toml:"grants,omitempty" json:"grants,omitempty" jsonschema:"title=Grant Types" jsonschema_description:"Allows tuning the token lifespans for individual grant types."`
 }
 
 // IdentityProvidersOpenIDConnectLifespanGrants allows tuning the lifespans for each grant type.
 type IdentityProvidersOpenIDConnectLifespanGrants struct {
 	AuthorizeCode     IdentityProvidersOpenIDConnectLifespanToken `koanf:"authorize_code" yaml:"authorize_code,omitempty" toml:"authorize_code,omitempty" json:"authorize_code,omitempty" jsonschema:"title=Authorize Code Grant" jsonschema_description:"Allows tuning the token lifespans for the authorize code grant."`
+	DeviceCode        IdentityProvidersOpenIDConnectLifespanToken `koanf:"device_code" yaml:"device_code,omitempty" toml:"device_code,omitempty" json:"device_code,omitempty" jsonschema:"title=Device Code Grant" jsonschema_description:"Allows tuning the token lifespans for the device code grant."`
 	Implicit          IdentityProvidersOpenIDConnectLifespanToken `koanf:"implicit" yaml:"implicit,omitempty" toml:"implicit,omitempty" json:"implicit,omitempty" jsonschema:"title=Implicit Grant" jsonschema_description:"Allows tuning the token lifespans for the implicit flow and grant."`
 	ClientCredentials IdentityProvidersOpenIDConnectLifespanToken `koanf:"client_credentials" yaml:"client_credentials,omitempty" toml:"client_credentials,omitempty" json:"client_credentials,omitempty" jsonschema:"title=Client Credentials Grant" jsonschema_description:"Allows tuning the token lifespans for the client credentials grant."`
 	RefreshToken      IdentityProvidersOpenIDConnectLifespanToken `koanf:"refresh_token" yaml:"refresh_token,omitempty" toml:"refresh_token,omitempty" json:"refresh_token,omitempty" jsonschema:"title=Refresh Token Grant" jsonschema_description:"Allows tuning the token lifespans for the refresh token grant."`
@@ -123,9 +141,9 @@ type IdentityProvidersOpenIDConnectLifespanGrants struct {
 // IdentityProvidersOpenIDConnectLifespanToken allows tuning the lifespans for each token type.
 type IdentityProvidersOpenIDConnectLifespanToken struct {
 	AccessToken   time.Duration `koanf:"access_token" yaml:"access_token,omitempty" toml:"access_token,omitempty" json:"access_token,omitempty" jsonschema:"default=60 minutes,title=Access Token Lifespan" jsonschema_description:"The duration an Access Token is valid for."`
-	AuthorizeCode time.Duration `koanf:"authorize_code" yaml:"authorize_code,omitempty" toml:"authorize_code,omitempty" json:"authorize_code,omitempty" jsonschema:"default=1 minute,title=Authorize Code Lifespan" jsonschema_description:"The duration an Authorization Code is valid for."`
-	IDToken       time.Duration `koanf:"id_token" yaml:"id_token,omitempty" toml:"id_token,omitempty" json:"id_token,omitempty" jsonschema:"default=60 minutes,title=ID Token Lifespan" jsonschema_description:"The duration an ID Token is valid for."`
 	RefreshToken  time.Duration `koanf:"refresh_token" yaml:"refresh_token,omitempty" toml:"refresh_token,omitempty" json:"refresh_token,omitempty" jsonschema:"default=90 minutes,title=Refresh Token Lifespan" jsonschema_description:"The duration a Refresh Token is valid for."`
+	IDToken       time.Duration `koanf:"id_token" yaml:"id_token,omitempty" toml:"id_token,omitempty" json:"id_token,omitempty" jsonschema:"default=60 minutes,title=ID Token Lifespan" jsonschema_description:"The duration an ID Token is valid for."`
+	AuthorizeCode time.Duration `koanf:"authorize_code" yaml:"authorize_code,omitempty" toml:"authorize_code,omitempty" json:"authorize_code,omitempty" jsonschema:"default=1 minute,title=Authorize Code Lifespan" jsonschema_description:"The duration an Authorization Code is valid for."`
 }
 
 // IdentityProvidersOpenIDConnectCORS represents an OpenID Connect 1.0 CORS config.
@@ -148,7 +166,7 @@ type IdentityProvidersOpenIDConnectClient struct {
 	RequestURIs  IdentityProvidersOpenIDConnectClientURIs `koanf:"request_uris" yaml:"request_uris,omitempty" toml:"request_uris,omitempty" json:"request_uris" jsonschema:"title=Request URIs" jsonschema_description:"List of whitelisted request URIs."`
 
 	Audience      []string `koanf:"audience" yaml:"audience,omitempty" toml:"audience,omitempty" json:"audience" jsonschema:"uniqueItems,title=Audience" jsonschema_description:"List of authorized audiences."`
-	Scopes        []string `koanf:"scopes" yaml:"scopes,omitempty" toml:"scopes,omitempty" json:"scopes" jsonschema:"required,enum=openid,enum=offline_access,enum=groups,enum=email,enum=profile,enum=authelia.bearer.authz,uniqueItems,title=Scopes" jsonschema_description:"The Scopes this client is allowed request and be granted."`
+	Scopes        []string `koanf:"scopes" yaml:"scopes,omitempty" toml:"scopes,omitempty" json:"scopes" jsonschema:"required,enum=openid,enum=offline_access,enum=profile,enum=email,enum=address,enum=phone,enum=groups,enum=authelia.bearer.authz,uniqueItems,title=Scopes" jsonschema_description:"The Scopes this client is allowed request and be granted."`
 	GrantTypes    []string `koanf:"grant_types" yaml:"grant_types,omitempty" toml:"grant_types,omitempty" json:"grant_types" jsonschema:"enum=authorization_code,enum=implicit,enum=refresh_token,enum=client_credentials,enum=urn:ietf:params:oauth:grant-type:device_code,uniqueItems,title=Grant Types" jsonschema_description:"The Grant Types this client is allowed to use for the protected endpoints."`
 	ResponseTypes []string `koanf:"response_types" yaml:"response_types,omitempty" toml:"response_types,omitempty" json:"response_types" jsonschema:"enum=code,enum=id_token token,enum=id_token,enum=token,enum=code token,enum=code id_token,enum=code id_token token,uniqueItems,title=Response Types" jsonschema_description:"The Response Types the client is authorized to request."`
 	ResponseModes []string `koanf:"response_modes" yaml:"response_modes,omitempty" toml:"response_modes,omitempty" json:"response_modes" jsonschema:"enum=form_post,enum=form_post.jwt,enum=query,enum=query.jwt,enum=fragment,enum=fragment.jwt,enum=jwt,uniqueItems,title=Response Modes" jsonschema_description:"The Response Modes this client is authorized request."`
@@ -164,7 +182,7 @@ type IdentityProvidersOpenIDConnectClient struct {
 	RequirePushedAuthorizationRequests bool `koanf:"require_pushed_authorization_requests" yaml:"require_pushed_authorization_requests,omitempty" toml:"require_pushed_authorization_requests,omitempty" json:"require_pushed_authorization_requests" jsonschema:"default=false,title=Require Pushed Authorization Requests" jsonschema_description:"Requires Pushed Authorization Requests for this client to perform an authorization."`
 	RequirePKCE                        bool `koanf:"require_pkce" yaml:"require_pkce,omitempty" toml:"require_pkce,omitempty" json:"require_pkce" jsonschema:"default=false,title=Require PKCE" jsonschema_description:"Requires a Proof Key for this client to perform Code Exchange."`
 
-	PKCEChallengeMethod string `koanf:"pkce_challenge_method" yaml:"pkce_challenge_method,omitempty" toml:"pkce_challenge_method,omitempty" json:"pkce_challenge_method" jsonschema:"enum=plain,enum=S256,title=PKCE Challenge Method" jsonschema_description:"The PKCE Challenge Method enforced on this client."`
+	PKCEChallengeMethod string `koanf:"pkce_challenge_method" yaml:"pkce_challenge_method,omitempty" toml:"pkce_challenge_method,omitempty" json:"pkce_challenge_method" jsonschema:"enum=,enum=plain,enum=S256,title=PKCE Challenge Method" jsonschema_description:"The PKCE Challenge Method enforced on this client."`
 
 	AuthorizationSignedResponseAlg      string `koanf:"authorization_signed_response_alg" yaml:"authorization_signed_response_alg,omitempty" toml:"authorization_signed_response_alg,omitempty" json:"authorization_signed_response_alg" jsonschema:"default=none,enum=,enum=none,enum=HS256,enum=HS384,enum=HS512,enum=RS256,enum=RS384,enum=RS512,enum=ES256,enum=ES384,enum=ES512,enum=PS256,enum=PS384,enum=PS512,title=Authorization Signing Algorithm" jsonschema_description:"The JOSE signing algorithm (JWS) this client uses to sign the Authorization objects that it generates and responds with. i.e. the JWS 'alg' value."`
 	AuthorizationSignedResponseKeyID    string `koanf:"authorization_signed_response_key_id" yaml:"authorization_signed_response_key_id,omitempty" toml:"authorization_signed_response_key_id,omitempty" json:"authorization_signed_response_key_id" jsonschema:"title=Authorization Signing Key ID" jsonschema_description:"The Key ID of a JOSE signing key (JWS) this client uses to sign the Authorization objects that it generates and responds with. This value overrides the 'authorization_signed_response_alg'. i.e. the JWS 'kid' value."`
@@ -229,6 +247,7 @@ var DefaultOpenIDConnectConfiguration = IdentityProvidersOpenIDConnect{
 			IDToken:       time.Hour,
 			RefreshToken:  time.Minute * 90,
 		},
+		DeviceCode: time.Minute * 10,
 	},
 	EnforcePKCE: "public_clients_only",
 }

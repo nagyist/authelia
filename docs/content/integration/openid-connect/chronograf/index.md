@@ -21,7 +21,7 @@ seo:
 ## Tested Versions
 
 - [Authelia]
-  - [v4.39.1](https://github.com/authelia/authelia/releases/tag/v4.39.1)
+  - [v4.39.4](https://github.com/authelia/authelia/releases/tag/v4.39.4)
 - [Chronograf]
   - [v1.10.7](https://docs.influxdata.com/chronograf/v1/about_the_project/release-notes/#v1107)
 
@@ -58,12 +58,19 @@ identity_providers:
         client_secret: '$pbkdf2-sha512$310000$c8p78n7pUMln0jzvd4aK4Q$JNRBzwAo0ek5qKn50cFzzvE9RXV88h1wJn5KGiHrD0YKtZaR/nCb2CJPOsKaPK0hjf.9yHxzQGZziziccp6Yng'  # The digest of 'insecure_secret'.
         public: false
         authorization_policy: 'two_factor'
+        require_pkce: true
+        pkce_challenge_method: 'S256'
         redirect_uris:
           - 'https://chronograf.{{< sitevar name="domain" nojs="example.com" >}}/oauth/authelia/callback'
         scopes:
           - 'openid'
           - 'email'
           - 'profile'
+        response_types:
+          - 'code'
+        grant_types:
+          - 'authorization_code'
+        access_token_signed_response_alg: 'none'
         userinfo_signed_response_alg: 'none'
         token_endpoint_auth_method: 'client_secret_basic'
 ```
