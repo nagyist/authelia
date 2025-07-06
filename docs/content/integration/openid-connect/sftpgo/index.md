@@ -21,7 +21,7 @@ seo:
 ## Tested Versions
 
 - [Authelia]
-  - [v4.39.1](https://github.com/authelia/authelia/releases/tag/v4.39.1)
+  - [v4.39.4](https://github.com/authelia/authelia/releases/tag/v4.39.4)
 - [SFTPGo]
   - [v2.6.6](https://github.com/drakkan/sftpgo/releases/tag/v2.6.6)
 
@@ -46,7 +46,7 @@ Some of the values presented in this guide can automatically be replaced with do
 
 {{< callout context="tip" title="Did you know?" icon="outline/rocket" >}}
 The `sftpgo_role` user attribute renders the value `admin` if the user is in the `sftpgo_admins` group within Authelia,
-renders the value `manager` if they are in the "sftpgo_managers" group, otherwise it renders `user`. You can adjust this
+renders the value `manager` if they are in the `sftpgo_managers` group, otherwise it renders `user`. You can adjust this
 to your preference to assign a role to the appropriate user groups.
 {{< /callout >}}
 
@@ -78,6 +78,8 @@ identity_providers:
         public: false
         authorization_policy: 'two_factor'
         claims_policy: 'sftpgo'
+        require_pkce: false
+        pkce_challenge_method: ''
         redirect_uris:
           - 'https://sftpgo.{{< sitevar name="domain" nojs="example.com" >}}/web/oidc/redirect'
           - 'https://sftpgo.{{< sitevar name="domain" nojs="example.com" >}}/web/oauth2/redirect'
@@ -86,6 +88,11 @@ identity_providers:
           - 'profile'
           - 'email'
           - 'sftpgo'
+        response_types:
+          - 'code'
+        grant_types:
+          - 'authorization_code'
+        access_token_signed_response_alg: 'none'
         userinfo_signed_response_alg: 'none'
         token_endpoint_auth_method: 'client_secret_basic'
 ```

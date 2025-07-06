@@ -23,7 +23,6 @@ func SecondFactorPasswordPOST(delayFunc middlewares.TimingAttackDelayFunc) middl
 		bodyJSON := bodySecondFactorPasswordRequest{}
 
 		var err error
-
 		if err = ctx.ParseBody(&bodyJSON); err != nil {
 			ctx.Logger.WithError(err).Errorf(logFmtErrParseRequestBody, regulation.AuthType1FA)
 
@@ -96,7 +95,7 @@ func SecondFactorPasswordPOST(delayFunc middlewares.TimingAttackDelayFunc) middl
 		successful = true
 
 		if len(bodyJSON.Flow) > 0 {
-			handleFlowResponse(ctx, &userSession, bodyJSON.FlowID, bodyJSON.Flow, bodyJSON.SubFlow)
+			handleFlowResponse(ctx, &userSession, bodyJSON.FlowID, bodyJSON.Flow, bodyJSON.SubFlow, bodyJSON.UserCode)
 		} else {
 			Handle2FAResponse(ctx, bodyJSON.TargetURL)
 		}

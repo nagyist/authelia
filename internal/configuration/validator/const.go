@@ -32,18 +32,10 @@ const (
 	durationZero = time.Duration(0)
 )
 
-const (
-	digestSHA1   = "sha1"
-	digestSHA224 = "sha224"
-	digestSHA256 = "sha256"
-	digestSHA384 = "sha384"
-	digestSHA512 = "sha512"
-)
-
 // Hashing constants.
 const (
 	hashLegacyArgon2id = "argon2id"
-	hashLegacySHA512   = digestSHA512
+	hashLegacySHA512   = schema.SHA512Lower
 
 	hashArgon2    = "argon2"
 	hashSHA2Crypt = "sha2crypt"
@@ -328,6 +320,7 @@ const (
 	errFmtWebAuthnPasskeyDiscoverability = "webauthn: selection_criteria: option 'discoverability' should generally be configured as '%s' or '%s' when passkey logins are enabled" //nolint:gosec
 	errFmtWebAuthnFiltering              = "webauthn: filtering: option 'permitted_aaguids' and 'prohibited_aaguids' are mutually exclusive however both have values"
 	errFmtWebAuthnBoolean                = "webauthn: option '%s' is %t but it must be %t when '%s' is %t"
+	errFmtWebAuthnMetadataString         = "webauthn: metadata: option '%s' is '%s' but it must be %s"
 )
 
 // Access Control error constants.
@@ -522,9 +515,9 @@ var (
 
 var (
 	validArgon2Variants    = []string{"argon2id", "id", "argon2i", "i", "argon2d", "d"}
-	validSHA2CryptVariants = []string{digestSHA256, digestSHA512}
-	validPBKDF2Variants    = []string{digestSHA1, digestSHA224, digestSHA256, digestSHA384, digestSHA512}
-	validBcryptVariants    = []string{"standard", digestSHA256}
+	validSHA2CryptVariants = []string{schema.SHA256Lower, schema.SHA512Lower}
+	validPBKDF2Variants    = []string{schema.SHA1Lower, schema.SHA224Lower, schema.SHA256Lower, schema.SHA384Lower, schema.SHA512Lower}
+	validBcryptVariants    = []string{"standard", schema.SHA256Lower}
 	validScryptVariants    = []string{"scrypt", "yescrypt"}
 	validHashAlgorithms    = []string{hashSHA2Crypt, hashPBKDF2, hashScrypt, hashBcrypt, hashArgon2}
 )

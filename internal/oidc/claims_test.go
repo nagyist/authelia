@@ -59,7 +59,7 @@ func TestClaimValidate(t *testing.T) {
 		},
 	}
 
-	strategy := oidc.NewCustomClaimsStrategy(config.Clients[0], config.Scopes, config.ClaimsPolicies)
+	strategy := oidc.NewCustomClaimsStrategyFromClient(config.Clients[0], config.Scopes, config.ClaimsPolicies)
 
 	client := &oidc.RegisteredClient{
 		ID:     config.Clients[0].ID,
@@ -236,6 +236,7 @@ func TestNewClaimRequestsMatcher(t *testing.T) {
 			policy: {
 				CustomClaims: map[string]schema.IdentityProvidersOpenIDConnectCustomClaim{
 					claim: {
+						Name:      claim,
 						Attribute: attribute,
 					},
 				},
@@ -252,7 +253,7 @@ func TestNewClaimRequestsMatcher(t *testing.T) {
 
 	client := &oidc.RegisteredClient{
 		ID:             config.Clients[0].ID,
-		ClaimsStrategy: oidc.NewCustomClaimsStrategy(config.Clients[0], config.Scopes, config.ClaimsPolicies),
+		ClaimsStrategy: oidc.NewCustomClaimsStrategyFromClient(config.Clients[0], config.Scopes, config.ClaimsPolicies),
 		Scopes:         config.Clients[0].Scopes,
 	}
 
@@ -813,6 +814,7 @@ func TestNewCustomClaimsStrategy(t *testing.T) {
 						AccessToken: []string{},
 						CustomClaims: map[string]schema.IdentityProvidersOpenIDConnectCustomClaim{
 							"example-claim": {
+								Name:      "example-claim",
 								Attribute: "example-claim",
 							},
 						},
@@ -863,6 +865,7 @@ func TestNewCustomClaimsStrategy(t *testing.T) {
 						AccessToken: []string{},
 						CustomClaims: map[string]schema.IdentityProvidersOpenIDConnectCustomClaim{
 							"example-claim": {
+								Name:      "example-claim",
 								Attribute: "example-claim",
 							},
 						},
@@ -916,6 +919,7 @@ func TestNewCustomClaimsStrategy(t *testing.T) {
 						AccessToken: []string{},
 						CustomClaims: map[string]schema.IdentityProvidersOpenIDConnectCustomClaim{
 							"example-claim": {
+								Name:      "example-claim",
 								Attribute: "example-claim",
 							},
 						},
@@ -969,6 +973,7 @@ func TestNewCustomClaimsStrategy(t *testing.T) {
 						AccessToken: []string{},
 						CustomClaims: map[string]schema.IdentityProvidersOpenIDConnectCustomClaim{
 							"example-claim": {
+								Name:      "example-claim",
 								Attribute: "example-claim",
 							},
 						},
@@ -1022,6 +1027,7 @@ func TestNewCustomClaimsStrategy(t *testing.T) {
 						AccessToken: []string{},
 						CustomClaims: map[string]schema.IdentityProvidersOpenIDConnectCustomClaim{
 							"example-claim": {
+								Name:      "example-claim",
 								Attribute: "example-claim",
 							},
 						},
@@ -1075,6 +1081,7 @@ func TestNewCustomClaimsStrategy(t *testing.T) {
 						AccessToken: []string{},
 						CustomClaims: map[string]schema.IdentityProvidersOpenIDConnectCustomClaim{
 							"example-claim": {
+								Name:      "example-claim",
 								Attribute: "example-claim",
 							},
 						},
@@ -1125,6 +1132,7 @@ func TestNewCustomClaimsStrategy(t *testing.T) {
 						AccessToken: []string{},
 						CustomClaims: map[string]schema.IdentityProvidersOpenIDConnectCustomClaim{
 							"example-claim": {
+								Name:      "example-claim",
 								Attribute: "example-claim",
 							},
 						},
@@ -1175,6 +1183,7 @@ func TestNewCustomClaimsStrategy(t *testing.T) {
 						AccessToken: []string{},
 						CustomClaims: map[string]schema.IdentityProvidersOpenIDConnectCustomClaim{
 							"example-claim": {
+								Name:      "example-claim",
 								Attribute: "example-claim",
 							},
 						},
@@ -1228,9 +1237,11 @@ func TestNewCustomClaimsStrategy(t *testing.T) {
 						AccessToken: []string{},
 						CustomClaims: map[string]schema.IdentityProvidersOpenIDConnectCustomClaim{
 							"example-claim": {
+								Name:      "example-claim",
 								Attribute: "example-claim",
 							},
 							"example-claim-alt": {
+								Name:      "example-claim-alt",
 								Attribute: "example-claim",
 							},
 						},
@@ -1281,6 +1292,7 @@ func TestNewCustomClaimsStrategy(t *testing.T) {
 						AccessToken: []string{},
 						CustomClaims: map[string]schema.IdentityProvidersOpenIDConnectCustomClaim{
 							"example-claim": {
+								Name:      "example-claim",
 								Attribute: "example-claim",
 							},
 						},
@@ -1331,6 +1343,7 @@ func TestNewCustomClaimsStrategy(t *testing.T) {
 						AccessToken: []string{},
 						CustomClaims: map[string]schema.IdentityProvidersOpenIDConnectCustomClaim{
 							"example-claim": {
+								Name:      "example-claim",
 								Attribute: "example-claim",
 							},
 						},
@@ -1378,6 +1391,7 @@ func TestNewCustomClaimsStrategy(t *testing.T) {
 						AccessToken: []string{},
 						CustomClaims: map[string]schema.IdentityProvidersOpenIDConnectCustomClaim{
 							"example-claim": {
+								Name:      "example-claim",
 								Attribute: "example-claim",
 							},
 						},
@@ -1428,6 +1442,7 @@ func TestNewCustomClaimsStrategy(t *testing.T) {
 						AccessToken: []string{},
 						CustomClaims: map[string]schema.IdentityProvidersOpenIDConnectCustomClaim{
 							"example-claim": {
+								Name:      "example-claim",
 								Attribute: "example-claim",
 							},
 						},
@@ -1472,7 +1487,7 @@ func TestNewCustomClaimsStrategy(t *testing.T) {
 
 			client := &oidc.RegisteredClient{
 				ID:             tc.config.Clients[0].ID,
-				ClaimsStrategy: oidc.NewCustomClaimsStrategy(tc.config.Clients[0], tc.config.Scopes, tc.config.ClaimsPolicies),
+				ClaimsStrategy: oidc.NewCustomClaimsStrategyFromClient(tc.config.Clients[0], tc.config.Scopes, tc.config.ClaimsPolicies),
 				Scopes:         tc.config.Clients[0].Scopes,
 			}
 

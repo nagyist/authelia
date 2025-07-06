@@ -40,47 +40,11 @@ func NewSessionWithRequestedAt(requestedAt time.Time) (session *Session) {
 // NewSessionWithRequester uses details from a Requester to generate an OpenIDSession.
 func NewSessionWithRequester(ctx Context, issuer *url.URL, kid, username string, amr []string, extra map[string]any,
 	authTime time.Time, consent *model.OAuth2ConsentSession, requester oauthelia2.Requester, claims *ClaimsRequests) (session *Session) {
-	if extra == nil {
-		extra = map[string]any{}
-	}
+	session = NewSessionWithRequestedAt(ctx.GetClock().Now())
 
-	session = &Session{
-		DefaultSession: &openid.DefaultSession{
-			Claims: &jwt.IDTokenClaims{
-				Issuer:                              issuer.String(),
-				Subject:                             consent.Subject.UUID.String(),
-				Audience:                            nil,
-				ExpirationTime:                      nil,
-				IssuedAt:                            jwt.NewNumericDate(ctx.GetClock().Now()),
-				AuthTime:                            jwt.NewNumericDate(authTime),
-				Nonce:                               requester.GetRequestForm().Get(ClaimNonce),
-				AuthenticationContextClassReference: "",
-				AuthenticationMethodsReferences:     amr,
-				AuthorizedParty:                     requester.GetClient().GetID(),
-				AccessTokenHash:                     "",
-				CodeHash:                            "",
-				StateHash:                           "",
-				Extra:                               extra,
-			},
-			Headers: &jwt.Headers{
-				Extra: map[string]any{
-					JWTHeaderKeyIdentifier: kid,
-				},
-			},
-			Username:    username,
-			Subject:     consent.Subject.UUID.String(),
-			RequestedAt: consent.RequestedAt.UTC(),
-		},
-		ChallengeID:           model.NullUUID(consent.ChallengeID),
-		KID:                   "",
-		ClientID:              requester.GetClient().GetID(),
-		ClientCredentials:     false,
-		ExcludeNotBeforeClaim: false,
-		AllowedTopLevelClaims: nil,
-		ClaimRequests:         claims,
-		GrantedClaims:         consent.GrantedClaims,
-		Extra:                 map[string]any{},
-	}
+	session.SetValuesFromRequester(requester)
+	session.SetValuesFromConsentSession(consent)
+	session.SetValuesGeneral(ctx, issuer, kid, username, amr, authTime, claims, extra)
 
 	return session
 }
@@ -98,6 +62,53 @@ type Session struct {
 	ClaimRequests         *ClaimsRequests `json:"claim_requests,omitempty"`
 	GrantedClaims         []string        `json:"granted_claims,omitempty"`
 	Extra                 map[string]any  `json:"extra"`
+}
+
+func (s *Session) SetValuesFromRequester(requester oauthelia2.Requester) {
+	s.ClientID = requester.GetClient().GetID()
+	s.Claims.AuthorizedParty = requester.GetClient().GetID()
+	s.Claims.Nonce = requester.GetRequestForm().Get(FormParameterNonce)
+}
+
+func (s *Session) SetValuesFromConsentSession(consent *model.OAuth2ConsentSession) {
+	s.SetRequestedAt(consent.RequestedAt)
+
+	s.ChallengeID = model.NullUUID(consent.ChallengeID)
+	s.GrantedClaims = consent.GrantedClaims
+	s.Subject = consent.Subject.UUID.String()
+	s.Claims.Subject = consent.Subject.UUID.String()
+}
+
+func (s *Session) SetValuesGeneral(ctx Context, issuer *url.URL, kid string, username string, amr []string, authTime time.Time, claims *ClaimsRequests, extra map[string]any) {
+	if issuer != nil {
+		s.Claims.Issuer = issuer.String()
+	}
+
+	s.Claims.IssuedAt = jwt.NewNumericDate(ctx.GetClock().Now())
+
+	if !authTime.IsZero() {
+		s.Claims.AuthTime = jwt.NewNumericDate(authTime)
+	}
+
+	if len(kid) != 0 {
+		s.Headers.Extra[JWTHeaderKeyIdentifier] = kid
+	}
+
+	if len(username) != 0 {
+		s.Username = username
+	}
+
+	if len(amr) != 0 {
+		s.Claims.AuthenticationMethodsReferences = amr
+	}
+
+	if claims != nil {
+		s.ClaimRequests = claims
+	}
+
+	if len(extra) != 0 {
+		s.Claims.Extra = extra
+	}
 }
 
 // GetChallengeID returns the challenge id.
@@ -152,17 +163,17 @@ func (s *Session) GetJWTClaims() jwt.JWTClaimsContainer {
 		claims.Extra[ClaimExtra] = s.Extra
 	}
 
-	if s.DefaultSession != nil && s.DefaultSession.Claims != nil {
+	if s.DefaultSession != nil && s.Claims != nil {
 		for _, allowedClaim := range allowed {
-			if cl, ok := s.DefaultSession.Claims.Extra[allowedClaim]; ok {
+			if cl, ok := s.Claims.Extra[allowedClaim]; ok {
 				claims.Extra[allowedClaim] = cl
 			}
 		}
 
-		claims.Issuer = s.DefaultSession.Claims.Issuer
+		claims.Issuer = s.Claims.Issuer
 
-		if amr && len(s.DefaultSession.Claims.AuthenticationMethodsReferences) != 0 {
-			claims.Extra[ClaimAuthenticationMethodsReference] = s.DefaultSession.Claims.AuthenticationMethodsReferences
+		if amr && len(s.Claims.AuthenticationMethodsReferences) != 0 {
+			claims.Extra[ClaimAuthenticationMethodsReference] = s.Claims.AuthenticationMethodsReferences
 		}
 	}
 
@@ -179,7 +190,7 @@ func (s *Session) GetIDTokenClaims() (claims *jwt.IDTokenClaims) {
 		return nil
 	}
 
-	return s.DefaultSession.Claims
+	return s.Claims
 }
 
 // GetExtraClaims returns the Extra/Unregistered claims for this session.

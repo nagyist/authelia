@@ -131,7 +131,7 @@ func schemaJWKGetProperties(jwk schema.JWK) (properties *JWKProperties, err erro
 	case ed25519.PrivateKey, ed25519.PublicKey:
 		return &JWKProperties{}, nil
 	case *rsa.PrivateKey:
-		if key.PublicKey.N == nil {
+		if key.N == nil {
 			return &JWKProperties{oidc.KeyUseSignature, oidc.SigningAlgRSAUsingSHA256, 0, nil}, nil
 		}
 
@@ -191,7 +191,7 @@ func schemaJWKGetPropertiesEnc(jwk schema.JWK) (properties *JWKProperties, err e
 	case ed25519.PrivateKey, ed25519.PublicKey:
 		return &JWKProperties{}, nil
 	case *rsa.PrivateKey:
-		if key.PublicKey.N == nil {
+		if key.N == nil {
 			return &JWKProperties{oidc.KeyUseEncryption, oidc.EncryptionAlgRSAOAEP256, 0, nil}, nil
 		}
 
@@ -226,6 +226,8 @@ func jwkCalculateKID(key schema.CryptographicKey, props *JWKProperties, alg stri
 	if alg == "" {
 		alg = props.Algorithm
 	}
+
+	alg = strings.ReplaceAll(alg, "+", ".")
 
 	var thumbprint []byte
 

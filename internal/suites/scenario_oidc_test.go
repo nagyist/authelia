@@ -33,6 +33,7 @@ func (s *OIDCScenario) SetupSuite() {
 	s.RodSession = browser
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+
 	defer func() {
 		cancel()
 		s.collectScreenshot(ctx.Err(), s.Page)
@@ -46,8 +47,7 @@ func (s *OIDCScenario) SetupSuite() {
 }
 
 func (s *OIDCScenario) TearDownSuite() {
-	err := s.RodSession.Stop()
-
+	err := s.Stop()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -55,6 +55,7 @@ func (s *OIDCScenario) TearDownSuite() {
 
 func (s *OIDCScenario) SetupTest() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+
 	defer func() {
 		cancel()
 		s.collectScreenshot(ctx.Err(), s.Page)
@@ -72,6 +73,7 @@ func (s *OIDCScenario) TearDownTest() {
 
 func (s *OIDCScenario) TestShouldAuthorizeAccessToOIDCApp() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+
 	defer func() {
 		cancel()
 		s.collectScreenshot(ctx.Err(), s.Page)
@@ -89,8 +91,8 @@ func (s *OIDCScenario) TestShouldAuthorizeAccessToOIDCApp() {
 	err := s.Page.MustSearch("Log in").Click("left", 1)
 	assert.NoError(s.T(), err)
 
-	s.verifyIsConsentPage(s.T(), s.Context(ctx))
-	err = s.WaitElementLocatedByID(s.T(), s.Context(ctx), "accept-button").Click("left", 1)
+	s.verifyIsOpenIDConsentDecisionStage(s.T(), s.Context(ctx))
+	err = s.WaitElementLocatedByID(s.T(), s.Context(ctx), "openid-consent-accept").Click("left", 1)
 	assert.NoError(s.T(), err)
 
 	// Verify that the app is showing the info related to the user stored in the JWT token.
@@ -149,6 +151,7 @@ func (s *OIDCScenario) TestShouldAuthorizeAccessToOIDCApp() {
 
 func (s *OIDCScenario) TestShouldDenyConsent() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+
 	defer func() {
 		cancel()
 		s.collectScreenshot(ctx.Err(), s.Page)
@@ -166,9 +169,9 @@ func (s *OIDCScenario) TestShouldDenyConsent() {
 	err := s.Page.MustSearch("Log in").Click("left", 1)
 	assert.NoError(s.T(), err)
 
-	s.verifyIsConsentPage(s.T(), s.Context(ctx))
+	s.verifyIsOpenIDConsentDecisionStage(s.T(), s.Context(ctx))
 
-	err = s.WaitElementLocatedByID(s.T(), s.Context(ctx), "deny-button").Click("left", 1)
+	err = s.WaitElementLocatedByID(s.T(), s.Context(ctx), "openid-consent-deny").Click("left", 1)
 	assert.NoError(s.T(), err)
 
 	s.verifyIsOIDC(s.T(), s.Context(ctx), "access_denied", "https://oidc.example.com:8080/error?error=access_denied&error_description=The+resource+owner+or+authorization+server+denied+the+request.+Make+sure+that+the+request+you+are+making+is+valid.+Maybe+the+credential+or+request+parameters+you+are+using+are+limited+in+scope+or+otherwise+restricted.&iss=https%3A%2F%2Flogin.example.com%3A8080&state=random-string-here")

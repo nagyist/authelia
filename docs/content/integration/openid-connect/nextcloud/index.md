@@ -24,7 +24,7 @@ seo:
   - [v4.38.17](https://github.com/authelia/authelia/releases/tag/v4.38.17)
 - Application:
   - [Nextcloud OpenID Connect Login app]:
-    - Nextcloud [v31.0.4](https://github.com/nextcloud/server/releases/tag/v31.0.4)
+    - Nextcloud [v31.0.5](https://github.com/nextcloud/server/releases/tag/v31.0.5)
     - App [v3.2.2](https://github.com/pulsejet/nextcloud-oidc-login/releases/tag/v3.2.2) ([see also](https://apps.nextcloud.com/apps/oidc_login/releases?platform=31#31))
   - [Nextcloud OpenID Connect user backend app]:
     - Nextcloud [v31.0.4](https://github.com/nextcloud/server/releases/tag/v31.0.4)
@@ -68,13 +68,35 @@ section of the guide.
 
 #### Authelia
 
+{{< callout context="tip" title="Did you know?" icon="outline/rocket" >}}
+The `is_nextcloud_admin` user attribute renders the value `true` if the user is in the `nextcloud-admins` group within
+Authelia, otherwise it renders `false`. You can adjust this to your preference to assign the admin role to the
+appropriate user groups.
+{{< /callout >}}
+
 The following YAML configuration is an example __Authelia__
 [client configuration] for use with [Nextcloud]
 which will operate with the application example:
 
 ```yaml {title="configuration.yml"}
+definitions:
+  user_attributes:
+    is_nextcloud_admin:
+      ## Expression to evaluate admin privilege for Nextcloud.
+      expression: '"nextcloud-admins" in groups'
+
 identity_providers:
   oidc:
+    claims_policies:
+      nextcloud_userinfo:
+        custom_claims:
+          is_nextcloud_admin: {}
+
+    scopes:
+      nextcloud_userinfo:
+        claims:
+          - 'is_nextcloud_admin'
+
     ## The other portions of the mandatory OpenID Connect 1.0 configuration go here.
     ## See: https://www.authelia.com/c/oidc
     clients:
@@ -85,6 +107,7 @@ identity_providers:
         authorization_policy: 'two_factor'
         require_pkce: true
         pkce_challenge_method: 'S256'
+        claims_policy: 'nextcloud_userinfo'
         redirect_uris:
           - 'https://nextcloud.{{< sitevar name="domain" nojs="example.com" >}}/apps/oidc_login/oidc'
         scopes:
@@ -92,6 +115,12 @@ identity_providers:
           - 'profile'
           - 'email'
           - 'groups'
+          - 'nextcloud_userinfo'
+        response_types:
+          - 'code'
+        grant_types:
+          - 'authorization_code'
+        access_token_signed_response_alg: 'none'
         userinfo_signed_response_alg: 'none'
         token_endpoint_auth_method: 'client_secret_basic'
 ```
@@ -127,10 +156,11 @@ $CONFIG = array (
         'name' => 'name',
         'mail' => 'email',
         'groups' => 'groups',
+        'is_admin' => 'is_nextcloud_admin',
     ),
     'oidc_login_default_group' => 'oidc',
     'oidc_login_use_external_storage' => false,
-    'oidc_login_scope' => 'openid profile email groups',
+    'oidc_login_scope' => 'openid profile email groups nextcloud_userinfo',
     'oidc_login_proxy_ldap' => false,
     'oidc_login_disable_registration' => true,
     'oidc_login_redir_fallback' => false,
@@ -178,6 +208,11 @@ identity_providers:
           - 'profile'
           - 'email'
           - 'groups'
+        response_types:
+          - 'code'
+        grant_types:
+          - 'authorization_code'
+        access_token_signed_response_alg: 'none'
         userinfo_signed_response_alg: 'none'
         token_endpoint_auth_method: 'client_secret_post'
 ```

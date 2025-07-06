@@ -100,6 +100,7 @@ func FuncMap() map[string]any {
 		"uuidv4":         FuncUUIDv4,
 		"urlquery":       url.QueryEscape,
 		"urlunquery":     url.QueryUnescape,
+		"urlqueryarg":    FuncURLQueryArg,
 		"glob":           filepath.Glob,
 		"walk":           FuncWalk,
 
@@ -615,7 +616,6 @@ func FuncDateInZone(format string, date any, zone string) string {
 		location *time.Location
 		err      error
 	)
-
 	if location, err = time.LoadLocation(zone); err != nil {
 		location = time.UTC
 	}
@@ -662,4 +662,13 @@ func FuncMustToDate(format, date string) (time.Time, error) {
 
 func FuncUnixEpoch(date time.Time) string {
 	return strconv.FormatInt(date.Unix(), 10)
+}
+
+func FuncURLQueryArg(raw, key string) (value string, err error) {
+	uri, err := url.ParseRequestURI(raw)
+	if err != nil {
+		return "", err
+	}
+
+	return uri.Query().Get(key), nil
 }

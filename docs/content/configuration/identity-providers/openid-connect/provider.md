@@ -33,6 +33,15 @@ registered clients see the [OpenID Connect 1.0 Clients](clients.md) documentatio
 More information about the beta can be found in the [roadmap](../../../roadmap/active/openid-connect.md) and in the
 [integration](../../../integration/openid-connect/introduction.md) documentation.
 
+## OpenID Certified™
+
+Authelia is [OpenID Certified™] to conform to the [OpenID Connect™ protocol].
+
+{{< figure src="/images/oid-certification.jpg" class="center" process="resize 200x" >}}
+
+For more information please see the
+[OpenID Connect 1.0 Integration Documentation](../../../integration/openid-connect/introduction.md#openid-certified).
+
 ## Variables
 
 Some of the values within this page can automatically be replaced with documentation variables.
@@ -91,6 +100,7 @@ identity_providers:
         id_token_audience_mode: 'specification'
         custom_claims:
           claim_name:
+            name: 'claim_name'
             attribute: 'attribute_name'
     scopes:
       scope_name:
@@ -384,7 +394,9 @@ available are distinctly and intentionally different to those of the
 [Access Control Rules](../../security/access-control.md#rules) unless explicitly specified in this section. The reasons
 for the differences are clearly explained in the
 [OpenID Connect 1.0 FAQ](../../../integration/openid-connect/frequently-asked-questions.md#why-doesnt-the-access-control-configuration-work-with-openid-connect-10)
-and [ADR1](../../../reference/architecture-decision-log/1.md).
+and [ADR1](../../../reference/architecture-decision-log/1.md). These policies specifically apply solely to Authorization Requests and
+should not be used as a crutch for applications which do not implement the most basic
+level of access control on their end.
 {{< /callout >}}
 
 The authorization policies section allows creating custom authorization policies which can be applied to clients. This
@@ -478,18 +490,6 @@ utilize refresh tokens. For more information read this documentation about the [
 
 The default maximum lifetime of an access token.
 
-#### authorize_code
-
-{{< confkey type="string,integer" syntax="duration" default="1 minute" required="no" >}}
-
-The default maximum lifetime of an authorize code.
-
-#### id_token
-
-{{< confkey type="string,integer" syntax="duration" default="1 hour" required="no" >}}
-
-The default maximum lifetime of an ID token.
-
 #### refresh_token
 
 {{< confkey type="string,integer" syntax="duration" default="1 hour 30 minutes" required="no" >}}
@@ -500,6 +500,24 @@ access tokens or id tokens with an up-to-date expiration.
 A good starting point is 50% more or 30 minutes more (which ever is less) time than the highest lifespan out of the
 [access token](#access_token) lifespan and the [id token](#id_token) lifespan. For instance the default for all of these
 is 60 minutes, so the default refresh token lifespan is 90 minutes.
+
+#### id_token
+
+{{< confkey type="string,integer" syntax="duration" default="1 hour" required="no" >}}
+
+The default maximum lifetime of an ID token.
+
+#### authorize_code
+
+{{< confkey type="string,integer" syntax="duration" default="1 minute" required="no" >}}
+
+The default maximum lifetime of an authorize code.
+
+#### device_code
+
+{{< confkey type="string,integer" syntax="duration" default="10 minutes" required="no" >}}
+
+The default maximum lifetime of an device code.
 
 #### custom
 
@@ -528,41 +546,42 @@ identity_providers:
   oidc:
     lifespans:
       access_token: '1h'
-      authorize_code: '1m'
-      id_token: '1h'
       refresh_token: '90m'
+      id_token: '1h'
+      authorize_code: '1m'
+      device_code: '10m'
       custom:
         lifespan_name:
           access_token: '1h'
-          authorize_code: '1m'
-          id_token: '1h'
           refresh_token: '90m'
+          id_token: '1h'
+          authorize_code: '1m'
+          device_code: '10m'
           grants:
             authorize_code:
               access_token: '1h'
-              authorize_code: '1m'
-              id_token: '1h'
               refresh_token: '90m'
+              id_token: '1h'
+            device_code:
+              access_token: '1h'
+              refresh_token: '90m'
+              id_token: '1h'
             implicit:
               access_token: '1h'
-              authorize_code: '1m'
-              id_token: '1h'
               refresh_token: '90m'
+              id_token: '1h'
             client_credentials:
               access_token: '1h'
-              authorize_code: '1m'
-              id_token: '1h'
               refresh_token: '90m'
+              id_token: '1h'
             refresh_token:
               access_token: '1h'
-              authorize_code: '1m'
-              id_token: '1h'
               refresh_token: '90m'
+              id_token: '1h'
             jwt_bearer:
               access_token: '1h'
-              authorize_code: '1m'
-              id_token: '1h'
               refresh_token: '90m'
+              id_token: '1h'
 ```
 
 ### claims_policies
@@ -578,6 +597,18 @@ The keys under `claims_policies` is an arbitrary value that can be used in the
 #### id_token
 
 {{< confkey type="list(string)" required="no" >}}
+
+{{< callout context="danger" title="Security Notice" icon="outline/alert-octagon" >}}
+This option is a escape hatch which should not normally be used. It allows confidential personally identifiable
+information to be hydrated into the ID Token which is not normally encrypted. In addition this behaviour is only
+necessary for clients which do not actually support OpenID Connect 1.0 and indicates a significant bug with the client.
+
+This also is a common indicator that the client uses claims other than `iss` and `sub` to link users with the provider,
+which is a fairly significant security issue.
+
+For these reasons this option is highly discouraged and it's recommended the client in question fixes this significant
+bug instead. This option is provided only on a best effort basis
+{{< /callout >}}
 
 The list of claims automatically copied to the ID Token in addition to the standard ID Token claims provided the
 relevant scope was granted.
@@ -617,13 +648,19 @@ The list of claims available in this policy in addition to the standard claims. 
 which can either be concrete attributes from the [first factor](../../first-factor/introduction.md) backend or can be
 those defined via [definitions](../../definitions/user-attributes.md).
 
-The keys under `custom_claims` are arbitrary values which are the names of the claims.
+The keys under `custom_claims` are arbitrary values, and by default are the claim name and attribute values.
+
+##### name
+
+{{< confkey type="string" required="no" >}}
+
+The claim name for this claim. By default it's the same as the dictionary key.
 
 ##### attribute
 
 {{< confkey type="string" required="no" >}}
 
-The attribute name that this claim returns. By default it's the same as the claim name.
+The attribute name that this claim returns. By default it's the same as the dictionary key.
 
 ### scopes
 
@@ -728,3 +765,5 @@ To integrate Authelia's [OpenID Connect 1.0] implementation with a relying party
 [Subject Identifier Type]: https://openid.net/specs/openid-connect-core-1_0.html#SubjectIDTypes
 [Pairwise Identifier Algorithm]: https://openid.net/specs/openid-connect-core-1_0.html#PairwiseAlg
 [Pushed Authorization Requests]: https://datatracker.ietf.org/doc/html/rfc9126
+[OpenID Certified™]: https://openid.net/certification/
+[OpenID Connect™ protocol]: https://openid.net/developers/how-connect-works/
